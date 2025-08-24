@@ -12,11 +12,12 @@
   <style>
     html { font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji"; }
     .required::after { content: " *"; color: #ef4444; }
-    /* Focus ring tuning for accessibility */
     .focus-ring:focus { outline: none; box-shadow: 0 0 0 4px rgba(99,102,241,.3); }
   </style>
 </head>
 <body class="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100">
+  <!-- KAJABI INTEGRATION: This form posts directly to Kajabi -->
+
   <header class="p-6">
     <div class="max-w-4xl mx-auto flex items-center gap-3">
       <div class="h-10 w-10 rounded-2xl bg-black text-white grid place-content-center font-semibold">K</div>
@@ -31,9 +32,9 @@
           <h1 class="text-2xl sm:text-3xl font-semibold leading-tight">Get Your Free 10‑Minute Check + <span class="text-emerald-600">$50 Credit</span></h1>
           <p class="mt-2 text-slate-600">Answer a few quick questions so we can match you with the right clinician and next steps.</p>
 
-          <!-- Form Card -->
-          <form id="lead-form" class="mt-8 space-y-8" novalidate>
-            <!-- Pain / Goal -->
+          <!-- Form Card (posts directly to Kajabi) -->
+          <form id="lead-form" action="https://courses.kinnectionoffice.com/forms/2149240340/submissions" method="POST" class="mt-8 space-y-8">
+            <!-- Primary goal -->
             <fieldset class="space-y-4">
               <legend class="required block text-base font-medium">What are you most looking to fix right now?</legend>
               <div class="grid sm:grid-cols-2 gap-3" role="radiogroup" aria-label="Primary goal">
@@ -54,7 +55,7 @@
                   <span>Skin/aesthetics (PRP, facial regeneration)</span>
                 </label>
                 <label class="flex items-start gap-3 p-4 border rounded-xl hover:border-slate-400 cursor-pointer transition sm:col-span-2">
-                  <input type="radio" name="goal" value="Other" class="mt-1" required data-toggle="other-goal">
+                  <input type="radio" name="goal" value="Other" class="mt-1" required>
                   <span class="w-full">
                     Other
                     <input type="text" name="goal_other" id="goal_other" placeholder="Tell us briefly" class="ml-2 w-full max-w-lg border rounded-lg px-3 py-2 focus-ring hidden" autocomplete="off">
@@ -88,7 +89,7 @@
                   <span>Multiple things and still not where I want to be</span>
                 </label>
                 <label class="flex items-start gap-3 p-4 border rounded-xl hover:border-slate-400 cursor-pointer transition sm:col-span-2">
-                  <input type="radio" name="tried" value="Other" class="mt-1" required data-toggle="other-tried">
+                  <input type="radio" name="tried" value="Other" class="mt-1" required>
                   <span class="w-full">
                     Other
                     <input type="text" name="tried_other" id="tried_other" placeholder="Tell us briefly" class="ml-2 w-full max-w-lg border rounded-lg px-3 py-2 focus-ring hidden" autocomplete="off">
@@ -118,7 +119,7 @@
                   <span>1+ years</span>
                 </label>
                 <label class="flex items-start gap-3 p-4 border rounded-xl hover:border-slate-400 cursor-pointer transition sm:col-span-2">
-                  <input type="radio" name="duration" value="Other" class="mt-1" required data-toggle="other-duration">
+                  <input type="radio" name="duration" value="Other" class="mt-1" required>
                   <span class="w-full">
                     Other
                     <input type="text" name="duration_other" id="duration_other" placeholder="Tell us briefly" class="ml-2 w-full max-w-lg border rounded-lg px-3 py-2 focus-ring hidden" autocomplete="off">
@@ -168,10 +169,9 @@
 
             <!-- Submit -->
             <div class="pt-2 flex items-center justify-between gap-4 flex-wrap">
-              <button id="submitBtn" type="submit" class="inline-flex items-center justify-center px-6 py-3 rounded-2xl bg-emerald-600 text-white font-semibold shadow-lg hover:bg-emerald-700 active:scale-[.99] disabled:opacity-50 disabled:cursor-not-allowed">
+              <button type="submit" class="inline-flex items-center justify-center px-6 py-3 rounded-2xl bg-emerald-600 text-white font-semibold shadow-lg hover:bg-emerald-700 active:scale-[.99] disabled:opacity-50 disabled:cursor-not-allowed">
                 Get My 10‑Minute Check + $50 Credit
               </button>
-              <p id="formStatus" class="text-sm text-slate-500"></p>
             </div>
           </form>
         </div>
@@ -182,17 +182,18 @@
   </main>
 
   <script>
-    // UTM capture
+    // UTM capture → writes to hidden inputs so Kajabi can store them
     const params = new URLSearchParams(window.location.search);
     for (const key of ["utm_source","utm_medium","utm_campaign","utm_content","utm_term"]) {
       const el = document.getElementById(key);
       if (el && params.get(key)) el.value = params.get(key);
     }
 
-    // Show other text inputs when selecting "Other"
+    // Reveal "Other" write-in inputs when selecting Other
     function wireOther(radioname, inputId) {
       const radios = document.querySelectorAll(`input[name="${radioname}"]`);
       const input = document.getElementById(inputId);
+      if (!radios.length || !input) return;
       radios.forEach(r => {
         r.addEventListener('change', () => {
           if (r.checked && r.value === 'Other') {
@@ -210,72 +211,6 @@
     wireOther('goal','goal_other');
     wireOther('tried','tried_other');
     wireOther('duration','duration_other');
-
-    // Simple client-side validation helper
-    function validate(form) {
-      const invalid = [];
-      form.querySelectorAll('[required]').forEach(el => {
-        if ((el.type === 'checkbox' || el.type === 'radio')) {
-          if (el.type === 'radio') {
-            const group = form.querySelectorAll(`input[name="${el.name}"]`);
-            const anyChecked = Array.from(group).some(r => r.checked);
-            if (!anyChecked && !invalid.includes(el)) invalid.push(el);
-          } else if (el.type === 'checkbox' && !el.checked) {
-            invalid.push(el);
-          }
-        } else if (!el.value.trim()) {
-          invalid.push(el);
-        }
-      });
-      return invalid;
-    }
-
-    // Demo submit handler
-    const form = document.getElementById('lead-form');
-    const statusEl = document.getElementById('formStatus');
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      statusEl.textContent = '';
-
-      // Basic honeypot check
-      if (form.company && form.company.value) {
-        statusEl.textContent = 'Submission blocked.';
-        return;
-      }
-
-      const invalid = validate(form);
-      if (invalid.length) {
-        statusEl.textContent = 'Please complete all required fields.';
-        invalid[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
-        return;
-      }
-
-      const data = Object.fromEntries(new FormData(form).entries());
-
-      // TODO: Replace with your endpoint. Examples:
-      // 1) Make/Zapier webhook URL
-      // 2) Your Next.js API route (e.g., /api/lead)
-      // 3) Direct Kajabi form post (hidden form) or GHL webhook
-      const ENDPOINT = 'https://services.leadconnectorhq.com/hooks/DW5ij51NSQbqYNXN4jPx/webhook-trigger/0a1bfeeb-ebb4-4694-a6b3-3eace66f462d';
-
-      // Optimistic UI
-      const btn = document.getElementById('submitBtn');
-      btn.disabled = true; btn.textContent = 'Submitting…';
-
-      try {
-        // Demo mode: comment out the fetch if previewing without an endpoint
-        // const res = await fetch(ENDPOINT, { method: 'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify(data) });
-        // if (!res.ok) throw new Error('Network response was not ok');
-        await new Promise(r => setTimeout(r, 800)); // demo delay
-        statusEl.textContent = 'Thanks. We will contact you shortly to schedule your free 10‑minute check.';
-        form.reset();
-      } catch (err) {
-        console.error(err);
-        statusEl.textContent = 'Something went wrong. Please try again.';
-      } finally {
-        btn.disabled = false; btn.textContent = 'Get My 10‑Minute Check + $50 Credit';
-      }
-    });
   </script>
 </body>
 </html>
